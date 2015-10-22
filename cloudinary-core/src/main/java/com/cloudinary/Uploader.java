@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class Uploader {
 	public Uploader(Cloudinary cloudinary) {
 		this.cloudinary = cloudinary;
 	}
-	static final String[] BOOLEAN_UPLOAD_OPTIONS = new String[] {"backup", "exif", "faces", "colors", "image_metadata", "use_filename", "eager_async", "invalidate"};
+	static final String[] BOOLEAN_UPLOAD_OPTIONS = new String[] {"backup", "exif", "faces", "colors", "image_metadata", "use_filename", "unique_filename", "eager_async", "invalidate", "overwrite"};
 
 	public Map<String, Object> buildUploadParams(Map options) {
         if (options == null) options = Cloudinary.emptyMap();
@@ -62,6 +63,11 @@ public class Uploader {
 		params.put("proxy", (String) options.get("proxy"));
 		params.put("folder", (String) options.get("folder"));
 		params.put("tags", StringUtils.join(Cloudinary.asArray(options.get("tags")), ","));
+		if (options.get("face_coordinates") != null) {
+			params.put("face_coordinates", options.get("face_coordinates").toString());
+		}
+		params.put("allowed_formats", StringUtils.join(Cloudinary.asArray(options.get("allowed_formats")), ","));
+		params.put("context", Cloudinary.encodeMap(options.get("context")));
 		return params;
 	}
 
@@ -99,6 +105,9 @@ public class Uploader {
 		params.put("eager", buildEager((List<Transformation>) options.get("eager")));
 		params.put("headers", buildCustomHeaders(options.get("headers")));
 		params.put("tags", StringUtils.join(Cloudinary.asArray(options.get("tags")), ","));
+		if (options.get("face_coordinates") != null) {
+			params.put("face_coordinates", options.get("face_coordinates").toString());
+		}
 		return callApi("explicit", params, options, null);
 	}
 
@@ -216,6 +225,8 @@ public class Uploader {
 		HttpClient client = new DefaultHttpClient();
 
 		HttpPost postMethod = new HttpPost(apiUrl);
+		postMethod.setHeader("User-Agent", Cloudinary.USER_AGENT);
+		
 		MultipartEntity multipart = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
 		// Remove blank parameters
 		for (Map.Entry<String, Object> param : params.entrySet()) {
