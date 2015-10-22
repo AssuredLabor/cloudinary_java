@@ -2,6 +2,7 @@ package com.cloudinary.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -332,6 +333,14 @@ public class CloudinaryTest {
 		result = cloudinary.url().transformation(transformation).generate("test");
 		assertEquals("http://res.cloudinary.com/test123/image/upload/fl_abc.def/test", result);
 	}
+	
+	@Test
+	public void testOpacity() {
+		// should support opacity
+		Transformation transformation = new Transformation().opacity(50);
+		String result = cloudinary.url().transformation(transformation).generate("test");
+		assertEquals("http://res.cloudinary.com/test123/image/upload/o_50/test", result);
+	}
 
 	@Test
 	public void testImageTag() {
@@ -339,6 +348,24 @@ public class CloudinaryTest {
 		String result = cloudinary.url().transformation(transformation).imageTag("test", Cloudinary.asMap("alt", "my image"));
 		assertEquals(
 				"<img src='http://res.cloudinary.com/test123/image/upload/c_crop,h_101,w_100/test' alt='my image' height='101' width='100'/>",
+				result);
+		transformation = new Transformation().width(0.9).height(0.9).crop("crop").responsiveWidth(true);
+		result = cloudinary.url().transformation(transformation).imageTag("test", Cloudinary.asMap("alt", "my image"));
+		assertEquals(
+				"<img alt='my image' class='cld-responsive' data-src='http://res.cloudinary.com/test123/image/upload/c_crop,h_0.9,w_0.9/c_limit,w_auto/test'/>",
+				result);
+		result = cloudinary.url().transformation(transformation).imageTag("test", Cloudinary.asMap("alt", "my image", "class", "extra"));
+		assertEquals(
+				"<img alt='my image' class='extra cld-responsive' data-src='http://res.cloudinary.com/test123/image/upload/c_crop,h_0.9,w_0.9/c_limit,w_auto/test'/>",
+				result);
+		transformation = new Transformation().width("auto").crop("crop");
+		result = cloudinary.url().transformation(transformation).imageTag("test", Cloudinary.asMap("alt", "my image", "responsive_placeholder", "blank"));
+		assertEquals(
+				"<img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' alt='my image' class='cld-responsive' data-src='http://res.cloudinary.com/test123/image/upload/c_crop,w_auto/test'/>",
+				result);
+		result = cloudinary.url().transformation(transformation).imageTag("test", Cloudinary.asMap("alt", "my image", "responsive_placeholder", "other.gif"));
+		assertEquals(
+				"<img src='other.gif' alt='my image' class='cld-responsive' data-src='http://res.cloudinary.com/test123/image/upload/c_crop,w_auto/test'/>",
 				result);
 	}
 
@@ -394,46 +421,54 @@ public class CloudinaryTest {
 		assertEquals("http://res.cloudinary.com/test123/image/sprite/test.css", result);
 	}
 
-    @SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	@Test
-    public void testEscapePublicId() {
-        // should escape public_ids
-        Map<String, String> tests = Cloudinary.asMap(
-            "a b", "a%20b",
-            "a+b", "a%2Bb",
-            "a%20b", "a%20b",
-            "a-b", "a-b",
-            "a??b", "a%3F%3Fb");
-        for (Map.Entry<String, String> entry : tests.entrySet()) {
-            String result = cloudinary.url().generate(entry.getKey());        	
-            assertEquals("http://res.cloudinary.com/test123/image/upload/" + entry.getValue(), result);			
+	public void testEscapePublicId() {
+		// should escape public_ids
+		Map<String, String> tests = Cloudinary.asMap("a b", "a%20b", "a+b", "a%2Bb", "a%20b", "a%20b", "a-b", "a-b", "a??b", "a%3F%3Fb");
+		for (Map.Entry<String, String> entry : tests.entrySet()) {
+			String result = cloudinary.url().generate(entry.getKey());
+			assertEquals("http://res.cloudinary.com/test123/image/upload/" + entry.getValue(), result);
 		}
-    }
-    
-    @Test
-    public void testSignedUrl() {
-    	// should correctly sign a url
-    	String expected = "http://res.cloudinary.com/test123/image/upload/s--MaRXzoEC--/c_crop,h_20,w_10/v1234/image.jpg";
-    	String actual = cloudinary.url().version(1234).
-    			transformation(new Transformation().crop("crop").width(10).height(20)).
-    			signed(true).
-    			generate("image.jpg");
-    	assertEquals(expected, actual);
-    	
-    	expected = "http://res.cloudinary.com/test123/image/upload/s--ZlgFLQcO--/v1234/image.jpg";
-    	actual = cloudinary.url().version(1234).
-    			signed(true).
-    			generate("image.jpg");
-    	assertEquals(expected, actual);
-    	
-    	expected = "http://res.cloudinary.com/test123/image/upload/s--Ai4Znfl3--/c_crop,h_20,w_10/image.jpg";
-    	actual = cloudinary.url().
-    			transformation(new Transformation().crop("crop").width(10).height(20)).
-    			signed(true).
-    			generate("image.jpg");
-    	assertEquals(expected, actual);
-    }
+	}
+
+	@Test
+	public void testSignedUrl() {
+		// should correctly sign a url
+		String expected = "http://res.cloudinary.com/test123/image/upload/s--MaRXzoEC--/c_crop,h_20,w_10/v1234/image.jpg";
+		String actual = cloudinary.url().version(1234).transformation(new Transformation().crop("crop").width(10).height(20)).signed(true)
+				.generate("image.jpg");
+		assertEquals(expected, actual);
+
+		expected = "http://res.cloudinary.com/test123/image/upload/s--ZlgFLQcO--/v1234/image.jpg";
+		actual = cloudinary.url().version(1234).signed(true).generate("image.jpg");
+		assertEquals(expected, actual);
+
+		expected = "http://res.cloudinary.com/test123/image/upload/s--Ai4Znfl3--/c_crop,h_20,w_10/image.jpg";
+		actual = cloudinary.url().transformation(new Transformation().crop("crop").width(10).height(20)).signed(true).generate("image.jpg");
+		assertEquals(expected, actual);
+	}
 	
+	@Test
+	public void testResponsiveWidth() {
+		// should support responsive width
+		Transformation trans = new Transformation().width(100).height(100).crop("crop").responsiveWidth(true);
+		String result = cloudinary.url().transformation(trans).generate("test");
+		assertTrue(trans.isResponsive());
+		assertEquals("http://res.cloudinary.com/test123/image/upload/c_crop,h_100,w_100/c_limit,w_auto/test", result);  
+		Transformation.setResponsiveWidthTransformation(Cloudinary.asMap("width", "auto", "crop", "pad")); 
+		trans = new Transformation().width(100).height(100).crop("crop").responsiveWidth(true);
+		result = cloudinary.url().transformation(trans).generate("test");
+		assertTrue(trans.isResponsive());
+		assertEquals("http://res.cloudinary.com/test123/image/upload/c_crop,h_100,w_100/c_pad,w_auto/test", result);
+		Transformation.setResponsiveWidthTransformation(null);
+	}
+	
+	public void testUtils() {
+		assertEquals(Cloudinary.asBoolean(true, null), true);
+		assertEquals(Cloudinary.asBoolean(false, null), false);
+	}
+
 	public static Map<String, String> getUrlParameters(URI uri) throws UnsupportedEncodingException {
 		Map<String, String> params = new HashMap<String, String>();
 		for (String param : uri.getQuery().split("&")) {

@@ -20,7 +20,7 @@ public class CloudinaryUploadTag extends SimpleTagSupport {
     
     // Cloudinary Specific
     private String tags = null;
-    private String fieldName;
+    protected String fieldName;
     private String resourceType = "auto";
     private String transformation = null;
     private String eager = null;
@@ -32,18 +32,28 @@ public class CloudinaryUploadTag extends SimpleTagSupport {
     private String proxy = null;
     private String folder = null;
     private String faceCoordinates = null;
+    private String customCoordinates = null;
 	private String allowedFormats = null;
     private String context = null;
-    private boolean backup = false;
-    private boolean exif = false;
-    private boolean faces = false;
-    private boolean colors = false;
-    private boolean imageMetadata = false;
-    private boolean useFilename = false;
-    private boolean uniqueFilename = true;
-    private boolean eagerAsync = false;
-    private boolean invalidate = false;
-    private boolean overwrite = true;
+    private String ocr = null;
+    private String detection = null;
+    private String categorization = null;
+    private String similaritySearch = null;
+    private String backgroundRemoval = null;
+    private Float autoTagging = null;
+    protected String uploadPreset = null;
+	private Boolean backup = null;
+    private Boolean exif = null;
+    private Boolean faces = null;
+    private Boolean colors = null;
+    private Boolean imageMetadata = null;
+    private Boolean useFilename = null;
+    private Boolean uniqueFilename = null;
+    private Boolean eagerAsync = null;
+    private Boolean invalidate = null;
+    private Boolean overwrite = null;
+    private Boolean phash = null;
+    protected boolean unsigned = false;
 
 	public void doTag() throws JspException, IOException {
         Cloudinary cloudinary = Singleton.getCloudinary();
@@ -81,17 +91,25 @@ public class CloudinaryUploadTag extends SimpleTagSupport {
         options.put("eager_async", eagerAsync);
         options.put("invalidate", invalidate);
         options.put("face_coordinates", faceCoordinates);
+        options.put("custom_coordinates", customCoordinates);
         options.put("allowed_formats", allowedFormats);
         options.put("context", context);
         options.put("overwrite", overwrite);
+        options.put("phash", phash);
+        options.put("ocr", ocr);
+        options.put("detection", detection);
+        options.put("categorization", categorization);
+        options.put("similarity_search", similaritySearch);
+        options.put("auto_tagging", autoTagging);
+        options.put("background_removal", backgroundRemoval);
+        options.put("upload_preset", uploadPreset);
+        options.put("unsigned", unsigned);
 
         buildCallbackUrl(options);
 
-        String renderedHtml = uploader.imageUploadTag(fieldName, options, htmlOptions);
-        
-        getJspContext().getOut().println(renderedHtml);
+        getJspContext().getOut().println(uploadTag(uploader, options, htmlOptions));
     }
-
+	
     public void setId(String id) {
         this.id = id;
     }
@@ -301,6 +319,14 @@ public class CloudinaryUploadTag extends SimpleTagSupport {
 		this.faceCoordinates = faceCoordinates;
 	}
 
+    public String getCustomCoordinates() {
+        return customCoordinates;
+    }
+
+    public void setCustomCoordinates(String customCoordinates) {
+        this.customCoordinates = customCoordinates;
+    }
+
 	public String getAllowedFormats() {
 		return allowedFormats;
 	}
@@ -324,6 +350,74 @@ public class CloudinaryUploadTag extends SimpleTagSupport {
 	public void setOverwrite(boolean overwrite) {
 		this.overwrite = overwrite;
 	}
+	
+	public boolean isPhash() {
+		return phash;
+	}
+
+	public void setPhash(boolean phash) {
+		this.phash = phash;
+	}
+	
+	public String getOcr() {
+		return ocr;
+	}
+
+	public void setOcr(String ocr) {
+		this.ocr = ocr;
+	}
+
+	public String getDetection() {
+		return detection;
+	}
+
+	public void setDetection(String detection) {
+		this.detection = detection;
+	}
+
+	public String getCategorization() {
+		return categorization;
+	}
+
+	public void setCategorization(String categorization) {
+		this.categorization = categorization;
+	}
+
+	public String getSimilaritySearch() {
+		return similaritySearch;
+	}
+
+	public void setSimilaritySearch(String similaritySearch) {
+		this.similaritySearch = similaritySearch;
+	}
+
+    public String getBackgroundRemoval() {
+        return backgroundRemoval;
+    }
+
+    public void setBackgroundRemoval(String backgroundRemoval) {
+        this.backgroundRemoval = backgroundRemoval;
+    }
+
+	public Float getAutoTagging() {
+		return autoTagging;
+	}
+
+	public void setAutoTagging(String autoTagging) {
+		this.autoTagging = Float.parseFloat(autoTagging);
+	}
+	
+	public String getUploadPreset() {
+		return uploadPreset;
+	}
+
+	public void setUploadPreset(String uploadPreset) {
+		this.uploadPreset = uploadPreset;
+	}
+	
+	protected String uploadTag(Uploader uploader, Map options, Map htmlOptions) {
+		return uploader.imageUploadTag(fieldName, options, htmlOptions);
+	}
 
     private void buildCallbackUrl(Map options) {
         String callback = (String) options.get("callback");
@@ -343,6 +437,7 @@ public class CloudinaryUploadTag extends SimpleTagSupport {
     }
 
     private List<Transformation> buildEager() {
+    	if (eager == null) return null;
         String[] raws = eager.split("\\|");
         List<Transformation> list = new ArrayList<Transformation>();
         for (String raw : raws) {

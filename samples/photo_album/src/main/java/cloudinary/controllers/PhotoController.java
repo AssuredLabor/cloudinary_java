@@ -4,8 +4,10 @@ import cloudinary.lib.PhotoUploadValidator;
 import cloudinary.models.Photo;
 import cloudinary.models.PhotoUpload;
 import cloudinary.repositories.PhotoRepository;
+
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Singleton;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -13,7 +15,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 
 @Controller
@@ -28,7 +29,8 @@ public class PhotoController {
         return "photos";
     }
 
-    @RequestMapping(value = "/upload", method = RequestMethod.POST)
+    @SuppressWarnings("rawtypes")
+	@RequestMapping(value = "/upload", method = RequestMethod.POST)
     public String uploadPhoto(@ModelAttribute PhotoUpload photoUpload, BindingResult result, ModelMap model) throws IOException {
         PhotoUploadValidator validator = new PhotoUploadValidator();
         validator.validate(photoUpload, result);
@@ -67,6 +69,25 @@ public class PhotoController {
     @RequestMapping(value = "/direct_upload_form", method = RequestMethod.GET)
     public String directUploadPhotoForm(ModelMap model) {
         model.addAttribute("photoUpload", new PhotoUpload());
+        model.addAttribute("unsigned", false);
+        return "direct_upload_form";
+    }
+    
+    @SuppressWarnings("unchecked")
+	@RequestMapping(value = "/direct_unsigned_upload_form", method = RequestMethod.GET)
+    public String directUnsignedUploadPhotoForm(ModelMap model) throws Exception {
+        model.addAttribute("photoUpload", new PhotoUpload());
+        model.addAttribute("unsigned", true);
+        Cloudinary cld = Singleton.getCloudinary();
+        String preset = "sample_" + cld.apiSignRequest(Cloudinary.asMap("api_key", cld.getStringConfig("api_key")), cld.getStringConfig("api_secret")).substring(0, 10);
+        model.addAttribute("preset", preset);
+        try {
+        	Singleton.getCloudinary().api().createUploadPreset(Cloudinary.asMap(
+        			"name", preset, 
+        			"unsigned", true,
+        			"folder", "preset_folder"));
+        } catch (Exception e) {
+        }
         return "direct_upload_form";
     }
 }

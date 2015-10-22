@@ -34,6 +34,7 @@ requested transformations. This also shows how to chain transformations -->
 <div class="actions">
     <a class="upload_link" href="upload_form">Add photo</a>
     <a class="upload_link" href="direct_upload_form">Add photo (direct upload)</a>
+    <a class="upload_link" href="direct_unsigned_upload_form">Add photo (direct unsigned upload)</a>
 </div>
 
 <div class="photos">
@@ -123,6 +124,19 @@ requested transformations. This also shows how to chain transformations -->
                                 </table>
                                 <br/>
                             </td>
+                            <td>
+                                <div class="thumbnail_holder">
+                                    <cl:image storedSrc="${photo.upload}" extraClasses="thumbnail inline" crop="crop" gravity="face" height="150" width="150" dpr="auto" format="jpg"/>
+                                </div>
+                                <table class="info">
+                                    <tr><td>crop</td><td>crop</td></tr>
+                                    <tr><td>gravity</td><td>face</td></tr>
+                                    <tr><td>width</td><td>150</td></tr>
+                                    <tr><td>height</td><td>150</td></tr>
+                                    <tr><td>dpr</td><td>auto</td></tr>
+                                </table>
+                                <br/>
+                            </td>
                         </table>
 
                         <div class="note">
@@ -137,10 +151,12 @@ requested transformations. This also shows how to chain transformations -->
         </c:forEach>
     </c:if>
 </div>
+<cl:jsinclude/>
 <script type='text/javascript'>
     $('.toggle_info').click(function () {
         $(this).closest('.photo').toggleClass('show_more_info');
         return false;
     });
+    $.cloudinary.responsive();
 </script>
 <%@include file="post.jsp"%>

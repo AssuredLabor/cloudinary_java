@@ -260,11 +260,104 @@ public class UploaderTest {
     }
     
     @Test
+    public void testCustomCoordinates() throws Exception {
+    	//should allow sending face coordinates
+    	Coordinates coordinates = new Coordinates("121,31,110,151");
+    	Map uploadResult = cloudinary.uploader().upload("src/test/resources/logo.png", Cloudinary.asMap("custom_coordinates", coordinates));
+    	Map result = cloudinary.api().resource(uploadResult.get("public_id").toString(), Cloudinary.asMap("coordinates", true));
+    	long[] expected = new long[]{121L,31L,110L,151L};
+    	Object[] actual = ((org.json.simple.JSONArray)((org.json.simple.JSONArray)((Map)result.get("coordinates")).get("custom")).get(0)).toArray();
+    	for (int i = 0; i < expected.length; i++){
+    		assertEquals(expected[i], actual[i]);
+    	}
+    	
+    	coordinates = new Coordinates(new int[]{122,32,110,152});
+    	cloudinary.uploader().explicit((String) uploadResult.get("public_id"), Cloudinary.asMap("custom_coordinates", coordinates, "coordinates", true, "type", "upload"));
+    	result = cloudinary.api().resource(uploadResult.get("public_id").toString(), Cloudinary.asMap("coordinates", true));
+    	expected = new long[]{122L,32L,110L,152L};
+    	actual = ((org.json.simple.JSONArray)((org.json.simple.JSONArray)((Map)result.get("coordinates")).get("custom")).get(0)).toArray();
+    	for (int i = 0; i < expected.length; i++){
+    		assertEquals(expected[i], actual[i]);
+    	}
+    }
+    
+    @Test
     public void testContext() throws Exception {
     	//should allow sending context
     	Map context = Cloudinary.asMap("caption", "some caption", "alt", "alternative");
     	Map result = cloudinary.uploader().upload("src/test/resources/logo.png", Cloudinary.asMap("context", context));
     	Map info = cloudinary.api().resource((String) result.get("public_id"), Cloudinary.asMap("context", true));
     	assertEquals(Cloudinary.asMap("custom", context), info.get("context"));
+    	Map differentContext = Cloudinary.asMap("caption", "different caption", "alt2", "alternative alternative");
+    	cloudinary.uploader().explicit((String) result.get("public_id"), Cloudinary.asMap("type", "upload", "context", differentContext));
+    	info = cloudinary.api().resource((String) result.get("public_id"), Cloudinary.asMap("context", true));
+    	assertEquals(Cloudinary.asMap("custom", differentContext), info.get("context"));
     }
+    
+    @Test
+    public void testModerationRequest() throws Exception {
+    	//should support requesting manual moderation
+    	Map result = cloudinary.uploader().upload("src/test/resources/logo.png",  Cloudinary.asMap("moderation", "manual"));
+    	assertEquals("manual", ((Map) ((List<Map>) result.get("moderation")).get(0)).get("kind"));
+    	assertEquals("pending", ((Map) ((List<Map>) result.get("moderation")).get(0)).get("status"));
+    }
+    
+    
+    @Test
+    public void testRawConvertRequest() {
+    	//should support requesting raw conversion
+    	try {
+    		cloudinary.uploader().upload("src/test/resources/logo.png",  Cloudinary.asMap("raw_convert", "illegal"));
+    	} catch(Exception e) {
+    		assertTrue(e.getMessage().matches("(.*)(Illegal value|not a valid)(.*)"));
+        }
+    }
+    
+    @Test
+    public void testCategorizationRequest() {
+    	//should support requesting categorization
+    	try {
+    		cloudinary.uploader().upload("src/test/resources/logo.png",  Cloudinary.asMap("categorization", "illegal"));
+    	} catch(Exception e) {
+    		assertTrue(e.getMessage().matches("(.*)(Illegal value|not a valid)(.*)"));
+        }
+    }
+    
+    @Test
+    public void testDetectionRequest() {
+    	//should support requesting detection
+    	try {
+    		cloudinary.uploader().upload("src/test/resources/logo.png",  Cloudinary.asMap("detection", "illegal"));
+    	} catch(Exception e) {
+    		assertTrue(e.getMessage().matches("(.*)(Illegal value|not a valid)(.*)"));
+        }
+    }
+    
+    @Test
+    public void testAutoTaggingRequest() {
+    	//should support requesting auto tagging
+    	try {
+    		cloudinary.uploader().upload("src/test/resources/logo.png",  Cloudinary.asMap("auto_tagging", 0.5f));
+    	} catch(Exception e) {
+    		assertTrue(e.getMessage().matches("^Must use(.*)"));
+        }
+    }
+    
+    @Test
+    public void testUploadLargeRawFiles()  throws Exception {
+    	// support uploading large raw files
+        Map response = cloudinary.uploader().uploadLargeRaw("src/test/resources/docx.docx", Cloudinary.emptyMap());
+        assertEquals(new java.io.File("src/test/resources/docx.docx").length(), response.get("bytes"));
+        assertEquals(Boolean.TRUE, response.get("done"));
+    }
+    
+    @Test
+    public void testUnsignedUpload()  throws Exception {
+    	// should support unsigned uploading using presets
+        Map preset = cloudinary.api().createUploadPreset(Cloudinary.asMap("folder", "upload_folder", "unsigned", true));
+        Map result = cloudinary.uploader().unsignedUpload("src/test/resources/logo.png", preset.get("name").toString(), Cloudinary.emptyMap());
+        assertTrue(result.get("public_id").toString().matches("^upload_folder\\/[a-z0-9]+$"));
+        cloudinary.api().deleteUploadPreset(preset.get("name").toString(), Cloudinary.emptyMap());
+    }
+    	
 }
